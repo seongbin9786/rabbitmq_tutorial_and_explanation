@@ -1,6 +1,11 @@
 const amqp = require("amqplib/callback_api");
 
-let message = process.argv.slice(2).join(" ") || "Hello World"; // input from cli
+let msgNum = 0;
+
+const createRandomString = () => {
+  const length = Math.floor(Math.random() * 5); // 0<=len<=5
+  return msgNum++ + "_" + "* ".repeat(length) + "*";
+};
 
 amqp.connect("amqp://localhost", (error0, conn) => {
   if (error0) throw error0;
@@ -10,23 +15,24 @@ amqp.connect("amqp://localhost", (error0, conn) => {
 
     const queue = "task_queue";
 
-    // 1. Queue 선언은 멱등적이다. 이미 존재하지 않는 경우만 새로 생성된다.
+    // durable: true를 선언하면 RabbitMQ Server가 죽어도 Queue가 보존된다.
+    // Queue가 보존되는 정확한 원리는 모른다.
     channel.assertQueue(queue, {
-      // TODO: 설명 없이 durable: true가 사용됐다.
       durable: true,
     });
 
-    // string to binary
-    // 2. 메시지는 Byte Array로 전송된다.
-    const binary = Buffer.from(message);
+    // 1초마다 임의의 메시지를 전송
+    setInterval(() => {
+      let message = createRandomString();
+      const binary = Buffer.from(message);
 
-    channel.sendToQueue(queue, binary, { persistent: true });
+      // persistent: true 옵션을 사용하면 메시지도 보존되게 할 수 있다.
+      // 다만 강한 일관성을 보장하지 않는다. 스토리지에 메시지를 쓰는 도중 죽거나
+      // 캐시에만 저장돼있는 상태에서 죽는 경우 메시지는 보존되지 않는다.
+      // 그러나 이 정도 수준으로도 '충분한 수준'의 일관성이 보장된다.
+      channel.sendToQueue(queue, binary, { persistent: true });
 
-    console.log("[x] sent %s", message);
-
-    setTimeout(() => {
-      conn.close();
-      process.exit(0);
-    }, 500);
+      console.log("[x] Sent: %s", message);
+    }, 1000);
   });
 });
