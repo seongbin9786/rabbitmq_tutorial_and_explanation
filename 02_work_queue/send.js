@@ -1,11 +1,7 @@
 const amqp = require("amqplib/callback_api");
+const RandomMessageGenerator = require("../RandomMessageGenerator");
 
-let msgNum = 0;
-
-const createRandomString = () => {
-  const length = Math.floor(Math.random() * 5); // 0<=len<=5
-  return msgNum++ + "_" + "* ".repeat(length) + "*";
-};
+const generator = new RandomMessageGenerator();
 
 amqp.connect("amqp://localhost", (error0, conn) => {
   if (error0) throw error0;
@@ -23,7 +19,7 @@ amqp.connect("amqp://localhost", (error0, conn) => {
 
     // 1초마다 임의의 메시지를 전송
     setInterval(() => {
-      let message = createRandomString();
+      const message = generator.gen();
       const binary = Buffer.from(message);
 
       // persistent: true 옵션을 사용하면 메시지도 보존되게 할 수 있다.

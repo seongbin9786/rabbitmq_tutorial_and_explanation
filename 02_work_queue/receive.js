@@ -11,6 +11,9 @@ amqp.connect("amqp://localhost", (error0, conn) => {
     // 같은 Queue 이름으로 다른 옵션(durable 등)에서 차이가 생기는 경우 오류가 발생한다.
     channel.assertQueue(queue, { durable: true });
 
+    // Consumer에서만 prefetch를 설정한다.
+    // channel.prefetch(1);
+
     console.log(" [*] Waiting for messages in %s. To exit press CTRL+C", queue);
 
     // noAck: true 옵션은 Ack이 없고 RabbitMQ Server에서 consumer로 보내자 마자 제거 대상으로 지정한다.
